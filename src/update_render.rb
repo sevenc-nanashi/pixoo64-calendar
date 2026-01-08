@@ -118,10 +118,9 @@ def draw_events(text_scroll = 0)
   events =
     event_files.map { |f| JSON.parse(File.read(f), symbolize_names: true) }
   now = Time.now
-  events.filter! do |event|
-    start_time = Time.parse(event[:start_time])
+  events.reject! do |event|
     end_time = Time.parse(event[:end_time])
-    (now <= end_time) || (start_time.to_date == Date.today)
+    end_time < now
   end
   events.sort_by! do |event|
     start_time = Time.parse(event[:start_time])

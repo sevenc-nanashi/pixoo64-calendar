@@ -2,3 +2,5 @@
 !./src
 !Gemfile
 !Gemfile.lock
+!docker
+!docker/**
