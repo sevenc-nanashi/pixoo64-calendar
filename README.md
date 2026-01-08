@@ -1,6 +1,6 @@
 # pixoo64-calendar
 
-![Preview](./preview.png)
+![Preview](./preview.jpg)
 [Divoom Pixoo64](https://amzn.asia/d/dCySSAy)でカレンダーを表示するためのスクリプト。
 
 ## 必要なもの
