@@ -28,7 +28,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=${CRON_TZ}
 AUTH_KEY=${AUTH_KEY}
 PORT=${PORT}
-0 0 * * * root /usr/local/bin/pixoo64-update >> /var/log/cron.log 2>&1
+0 * * * * root /usr/local/bin/pixoo64-update >> /var/log/cron.log 2>&1
 CRON_EOF
 
 chmod 0644 "$CRON_FILE"
