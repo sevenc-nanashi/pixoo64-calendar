@@ -185,7 +185,7 @@ def draw_events(text_scroll = 0, hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
     start_time = Time.parse(event_data[:start_time])
     current_date = Date.today
     text_width = title_pixels.measure_misaki_string(title)
-    max_scroll = [0, text_width - EVENTS_TEXT_WIDTH + 2].max
+    max_scroll = [0, text_width - EVENTS_TEXT_WIDTH + 1].max
     text_widths << title_pixels.draw_misaki_string(
       title,
       1 - [text_scroll, max_scroll].min,
