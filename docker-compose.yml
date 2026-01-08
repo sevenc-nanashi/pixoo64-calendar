@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "4567:${PORT:-4567}"
+    env_file:
+      - .env
+    volumes:
+      - ./calendar:/app/calendar
+    restart: unless-stopped

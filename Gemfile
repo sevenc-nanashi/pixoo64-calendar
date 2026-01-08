@@ -13,8 +13,6 @@ gem "base64", "~> 0.3.0"
 
 gem "syntax_tree", "~> 6.3"
 
-gem "rmagick", "~> 6.1"
-
 gem "sinatra", "~> 4.2"
 
 gem "rackup", "~> 2.3"

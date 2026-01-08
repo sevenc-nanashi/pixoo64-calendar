@@ -68,12 +68,26 @@ class Pixels
       #.#
       .#.
     EOS
-    "9" => <<~EOS
+    "9" => <<~EOS,
       .#.
       #.#
       .##
       ..#
       .#.
+    EOS
+    ":" => <<~EOS,
+      ...
+      .#.
+      ...
+      .#.
+      ...
+    EOS
+    "/" => <<~EOS,
+      ..#
+      ..#
+      .#.
+      #..
+      #..
     EOS
   }
 
@@ -114,6 +128,7 @@ class Pixels
       char_width = draw_misaki_char(ch, x, offset_y, color, alpha)
       x += char_width
     end
+    x - offset_x
   end
 
   def draw_rect(x0, y0, width, height, color, alpha = 1.0)

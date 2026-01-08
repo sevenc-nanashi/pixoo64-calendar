@@ -11,6 +11,12 @@ require_relative "update_render"
 TIMEZONE = TZInfo::Timezone.get("Asia/Tokyo").utc_offset
 EXCLUDE_CALENDARS = (ENV["EXCLUDE_CALENDARS"] || "").split(",")
 
+AUTH_KEY = ENV.fetch("AUTH_KEY") { raise "AUTH_KEY is not set" }
+before do
+  provided_key = request.env["HTTP_AUTHORIZATION"]
+  halt 401, "Unauthorized\n" unless provided_key == AUTH_KEY
+end
+
 def parse_colorcode(color_code)
   return nil unless color_code&.match?(/^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/)
 
@@ -40,18 +46,18 @@ post "/push-events/begin" do
   status 200
 end
 
-post "/push-events/event" do
+post "/push-events/append" do
   request.body.rewind
   calendar_data = request.body.read
   calendars = Icalendar::Calendar.parse(calendar_data.strip)
   calendars.each do |calendar|
     calendar.events.each do |event|
+      sanitized_event_id = Digest::MD5.hexdigest(event.uid)
       uid =
-        "#{event.dtstart.to_time.to_i}-#{event.dtend.to_time.to_i}-#{event.uid}"
-      uid_sanitized = Digest::MD5.hexdigest(uid)
-      puts "Received event with UID: #{uid_sanitized}"
+        "#{event.dtstart.to_time.to_i}-#{event.dtend.to_time.to_i}-#{sanitized_event_id}"
+      puts "Received event with UID: #{uid}"
       event_data = {
-        uid: uid_sanitized,
+        uid: uid,
         title: event.summary.force_encoding("UTF-8"),
         start_time: event.dtstart.to_time.localtime(TIMEZONE).iso8601,
         end_time: event.dtend.to_time.localtime(TIMEZONE).iso8601,
@@ -68,7 +74,7 @@ post "/push-events/event" do
         puts "Excluding event from calendar: #{event_data[:calendar_name]}"
         next
       end
-      File.open("calendar/tmp_events/#{uid_sanitized}.json", "w") do |file|
+      File.open("calendar/tmp_events/#{uid}.json", "w") do |file|
         file.write(JSON.pretty_generate(event_data))
       end
     end
