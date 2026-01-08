@@ -14,8 +14,6 @@ EVENTS_HEADER_WIDTH = 4 * 5 + 1
 EVENTS_TEXT_WIDTH = PIC_SIZE - EVENTS_HEADER_WIDTH
 SCROLL_SPEED = 1
 
-HIDE_EVENT_NAME = ENV["HIDE_EVENT_NAME"] == "1"
-
 def draw_calendar
   holidays = JSON.load_file("./calendar/holidays.json")
   num_weeks = 6
@@ -113,7 +111,7 @@ def draw_calendar
   result_canvas
 end
 
-def draw_events(text_scroll = 0)
+def draw_events(text_scroll = 0, hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
   event_files = Dir.glob("./calendar/events/*.json")
   events =
     event_files.map { |f| JSON.parse(File.read(f), symbolize_names: true) }
@@ -149,7 +147,7 @@ def draw_events(text_scroll = 0)
 
     random_size = event_data[:start_time].hash % 10 + 5
 
-    title = (HIDE_EVENT_NAME ? ("●" * random_size) : event_data[:title])
+    title = (hide_event_name ? ("●" * random_size) : event_data[:title])
     start_time = Time.parse(event_data[:start_time])
     current_date = Date.today
     text_width = title_pixels.draw_misaki_string(title, 0, 0, [0, 0, 0], 0.0)
@@ -187,14 +185,14 @@ def draw_events(text_scroll = 0)
   [result_canvas, text_widths]
 end
 
-def run_update_render
+def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
   pic_id = 1
   pix_speed = 1000
   calendar_canvas = draw_calendar
 
   HTTP.post(API_URL, json: { "Command" => "Draw/ResetHttpGifId" })
 
-  _events_canvas, event_text_widths = draw_events
+  _events_canvas, event_text_widths = draw_events(0, hide_event_name: hide_event_name)
   max_scroll = event_text_widths.max + 1
 
   scroll_needed = max_scroll > EVENTS_TEXT_WIDTH
@@ -213,7 +211,10 @@ def run_update_render
   puts "Total frames to upload: #{frames}"
   frame_index = 0
   (0..scroll_steps).each do |scroll_offset|
-    events_canvas, _ = draw_events(scroll_offset * SCROLL_SPEED)
+    events_canvas, _ = draw_events(
+      scroll_offset * SCROLL_SPEED,
+      hide_event_name: hide_event_name
+    )
     final_canvas = Pixels.new(PIC_SIZE, PIC_SIZE)
     final_canvas.put!(calendar_canvas, 0, 0)
     final_canvas.put!(events_canvas, 0, CALENDAR_HEIGHT + 1)

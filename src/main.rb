@@ -96,7 +96,14 @@ post "/update" do
   end
 
   begin
-    run_update_render
+    hide_event_name_param = params["hide_event_name"] || params["HIDE_EVENT_NAME"]
+    if hide_event_name_param == "1"
+      run_update_render(hide_event_name: true)
+    elsif hide_event_name_param == "0"
+      run_update_render(hide_event_name: false)
+    else
+      run_update_render
+    end
     status 200
     { ok: true }.to_json
   rescue StandardError => e
