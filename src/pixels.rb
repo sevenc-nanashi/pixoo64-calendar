@@ -1,95 +1,11 @@
 # frozen_string_literal: true
+require "json"
 require_relative "misaki"
+
+SMALL_FONT = JSON.parse(File.read("#{__dir__}/small_font.json"))
 
 class Pixels
   attr_reader :width, :height, :data
-
-  SMALL_FONT = {
-    "0" => <<~EOS,
-      .#.
-      #.#
-      #.#
-      #.#
-      .#.
-    EOS
-    "1" => <<~EOS,
-      .#.
-      ##.
-      .#.
-      .#.
-      .#.
-    EOS
-    "2" => <<~EOS,
-      ##.
-      ..#
-      .#.
-      #..
-      ###
-    EOS
-    "3" => <<~EOS,
-      ##.
-      ..#
-      .#.
-      ..#
-      ##.
-    EOS
-    "4" => <<~EOS,
-      ..#
-      .#.
-      #.#
-      ###
-      ..#
-    EOS
-    "5" => <<~EOS,
-      ###
-      #..
-      ##.
-      ..#
-      ##.
-    EOS
-    "6" => <<~EOS,
-      .#.
-      #..
-      ##.
-      #.#
-      .#.
-    EOS
-    "7" => <<~EOS,
-      ###
-      ..#
-      .#.
-      .#.
-      .#.
-    EOS
-    "8" => <<~EOS,
-      .#.
-      #.#
-      .#.
-      #.#
-      .#.
-    EOS
-    "9" => <<~EOS,
-      .#.
-      #.#
-      .##
-      ..#
-      .#.
-    EOS
-    ":" => <<~EOS,
-      ...
-      .#.
-      ...
-      .#.
-      ...
-    EOS
-    "/" => <<~EOS,
-      ..#
-      ..#
-      .#.
-      #..
-      #..
-    EOS
-  }
 
   def initialize(width, height = nil)
     @width = width
@@ -102,12 +18,23 @@ class Pixels
     pattern = SMALL_FONT[char]
     return unless pattern
 
-    pattern.lines.each_with_index do |line, y|
-      line.chomp.chars.each_with_index do |pixel, x|
-        next if pixel == "."
+    6.times do |y|
+      3.times do |x|
+        next unless pattern[y * 3 + x]
         set_pixel(offset_x + x, offset_y + y, color, alpha)
       end
     end
+  end
+  def draw_small_string(string, offset_x, offset_y, color, alpha = 1.0)
+    x = offset_x
+    string.each_char do |ch|
+      draw_small_char(ch, x, offset_y, color, alpha)
+      x += 4
+    end
+    x - offset_x
+  end
+  def measure_small_string(string)
+    string.length * 4
   end
 
   def draw_misaki_char(char, offset_x, offset_y, color, alpha = 1.0)
@@ -131,9 +58,32 @@ class Pixels
     x - offset_x
   end
 
+  def measure_misaki_string(string)
+    width = 0
+    string.each_char do |ch|
+      pixels = MisakiGothic.instance.get_pixels_of_char(ch)
+      width += pixels[0].length
+    end
+    width
+  end
+
   def draw_rect(x0, y0, width, height, color, alpha = 1.0)
     (y0...(y0 + height)).each do |y|
       (x0...(x0 + width)).each { |x| set_pixel(x, y, color, alpha) }
+    end
+  end
+  def erase_rect(x0, y0, width, height, strength = 1.0)
+    (y0...(y0 + height)).each do |y|
+      (x0...(x0 + width)).each do |x|
+        r0, g0, b0, a0 = @data[y][x]
+        inv_strength = 1.0 - strength
+        @data[y][x] = [
+          r0 * inv_strength,
+          g0 * inv_strength,
+          b0 * inv_strength,
+          a0 * inv_strength
+        ]
+      end
     end
   end
   def draw_rect_outline(x0, y0, width, height, color, alpha = 1.0)

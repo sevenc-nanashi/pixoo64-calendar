@@ -14,6 +14,21 @@ EVENTS_HEADER_WIDTH = 4 * 5 + 1
 EVENTS_TEXT_WIDTH = PIC_SIZE - EVENTS_HEADER_WIDTH
 SCROLL_SPEED = 1
 
+MONTH_NAMES = %w[
+  January
+  February
+  March
+  April
+  May
+  June
+  July
+  August
+  September
+  October
+  November
+  December
+].freeze
+
 def draw_calendar
   holidays = JSON.load_file("./calendar/holidays.json")
   num_weeks = 6
@@ -56,7 +71,7 @@ def draw_calendar
       if date == Date.today
         1.0
       elsif date.month != Date.today.month
-        0.4
+        0.35
       else
         0.7
       end
@@ -105,6 +120,25 @@ def draw_calendar
         )
       end
   end
+
+  month_name = MONTH_NAMES[Date.today.month - 1]
+  month_name_width = text_pixels.measure_small_string(month_name)
+  erase_size = ((month_name_width + 2) / 8.0).ceil * 8
+  text_pixels.erase_rect(
+    PIC_SIZE - erase_size,
+    CALENDAR_HEIGHT - 7,
+    erase_size,
+    7,
+    0.5
+  )
+  text_pixels.draw_small_string(
+    month_name,
+    PIC_SIZE - month_name_width - 1,
+    CALENDAR_HEIGHT - 6,
+    ACCENT,
+    1
+  )
+
   result_canvas = Pixels.new(PIC_SIZE, CALENDAR_HEIGHT)
   result_canvas.put!(bg_pixels, 0, 0)
   result_canvas.put!(text_pixels, 0, 0)
@@ -150,7 +184,7 @@ def draw_events(text_scroll = 0, hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
     title = (hide_event_name ? ("●" * random_size) : event_data[:title])
     start_time = Time.parse(event_data[:start_time])
     current_date = Date.today
-    text_width = title_pixels.draw_misaki_string(title, 0, 0, [0, 0, 0], 0.0)
+    text_width = title_pixels.measure_misaki_string(title)
     max_scroll = [0, text_width - EVENTS_TEXT_WIDTH + 2].max
     text_widths << title_pixels.draw_misaki_string(
       title,
@@ -192,7 +226,8 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
 
   HTTP.post(API_URL, json: { "Command" => "Draw/ResetHttpGifId" })
 
-  _events_canvas, event_text_widths = draw_events(0, hide_event_name: hide_event_name)
+  _events_canvas, event_text_widths =
+    draw_events(0, hide_event_name: hide_event_name)
   max_scroll = event_text_widths.max + 1
 
   scroll_needed = max_scroll > EVENTS_TEXT_WIDTH
@@ -211,10 +246,11 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
   puts "Total frames to upload: #{frames}"
   frame_index = 0
   (0..scroll_steps).each do |scroll_offset|
-    events_canvas, _ = draw_events(
-      scroll_offset * SCROLL_SPEED,
-      hide_event_name: hide_event_name
-    )
+    events_canvas, _ =
+      draw_events(
+        scroll_offset * SCROLL_SPEED,
+        hide_event_name: hide_event_name
+      )
     final_canvas = Pixels.new(PIC_SIZE, PIC_SIZE)
     final_canvas.put!(calendar_canvas, 0, 0)
     final_canvas.put!(events_canvas, 0, CALENDAR_HEIGHT + 1)
