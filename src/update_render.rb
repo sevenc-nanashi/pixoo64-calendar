@@ -244,7 +244,6 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
   puts "Total frames to upload: #{frames}"
   frame_index = 0
 
-  commands = []
   maybe_pic_id =
     JSON.parse(
       HTTP.post(API_URL, json: { "Command" => "Draw/GetHttpGifId" }).body.to_s
@@ -276,31 +275,23 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
     repeat.times do
       break if frame_index >= frames
       puts "Generating frame #{frame_index + 1}/#{frames}"
-      commands << {
+      command = {
         "Command" => "Draw/SendHttpGif",
         "PicNum" => frames,
         "PicWidth" => PIC_SIZE,
         "PicOffset" => frame_index,
         "PicID" => pic_id,
         "PixSpeed" => pix_speed,
-
         "PicData" => Base64.strict_encode64(pixel_data)
       }
       frame_index += 1
+      res =
+        HTTP
+          .post(API_URL, json: command)
+          .then { |response| JSON.parse(response.body.to_s) }
+      raise "Failed to send command list: #{res}" if res["error_code"] != 0
     end
   end
-
-  res =
-    HTTP
-      .post(
-        API_URL,
-        json: {
-          Command: "Draw/CommandList",
-          CommandList: commands
-        }
-      )
-      .then { |response| JSON.parse(response.body.to_s) }
-  raise "Failed to send command list: #{res}" if res["error_code"] != 0
 end
 
 run_update_render if $PROGRAM_NAME == __FILE__
