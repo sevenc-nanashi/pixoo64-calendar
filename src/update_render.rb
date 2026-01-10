@@ -224,8 +224,6 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
   pix_speed = 100
   calendar_canvas = draw_calendar
 
-  HTTP.post(API_URL, json: { "Command" => "Draw/ResetHttpGifId" })
-
   _events_canvas, event_text_widths =
     draw_events(0, hide_event_name: hide_event_name)
   max_scroll = event_text_widths.max + 1
