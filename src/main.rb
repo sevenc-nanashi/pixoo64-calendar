@@ -83,7 +83,7 @@ post "/push-events/append" do
 end
 
 post "/push-events/end" do
-  FileUtils.rm_rf("calendar/events")
+  FileUtils.rm_r("calendar/events")
   FileUtils.mv("calendar/tmp_events", "calendar/events")
 
   status 200

@@ -221,7 +221,7 @@ end
 
 def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
   pic_id = 1
-  pix_speed = 1000
+  pix_speed = 100
   calendar_canvas = draw_calendar
 
   HTTP.post(API_URL, json: { "Command" => "Draw/ResetHttpGifId" })
@@ -239,12 +239,22 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
         0
       end
     )
-  stop_steps = 10
+  stop_steps = 1
   frames = (scroll_needed ? scroll_steps + stop_steps * 2 - 1 : 1)
-  frames = 60 if frames > 60
+  frames = [frames, 60].min
   puts "Total scroll steps: #{scroll_steps}"
   puts "Total frames to upload: #{frames}"
   frame_index = 0
+
+  commands = []
+  maybe_pic_id =
+    JSON.parse(
+      HTTP.post(API_URL, json: { "Command" => "Draw/GetHttpGifId" }).body.to_s
+    )
+  raise "Failed to get PicID: #{maybe_pic_id}" unless maybe_pic_id["PicId"]
+  pic_id = maybe_pic_id["PicId"]
+  puts "Using PicID: #{pic_id}"
+
   (0..scroll_steps).each do |scroll_offset|
     events_canvas, _ =
       draw_events(
@@ -264,37 +274,35 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
       else
         1
       end
+
     repeat.times do
       break if frame_index >= frames
-      puts "Uploading frame #{frame_index + 1}/#{frames}"
-      pic_id =
-        JSON.parse(
-          HTTP
-            .post(API_URL, json: { "Command" => "Draw/GetHttpGifId" })
-            .body
-            .to_s
-        )[
-          "PicID"
-        ]
-      res =
-        HTTP.post(
-          API_URL,
-          json: {
-            "Command" => "Draw/SendHttpGif",
-            "PicWidth" => PIC_SIZE,
-            "PicNum" => frames,
-            "PicOffset" => frame_index,
-            "PicID" => pic_id,
-            "PixSpeed" => pix_speed,
-            "PicData" => Base64.strict_encode64(pixel_data)
-          }
-        )
+      puts "Generating frame #{frame_index + 1}/#{frames}"
+      commands << {
+        "Command" => "Draw/SendHttpGif",
+        "PicNum" => frames,
+        "PicWidth" => PIC_SIZE,
+        "PicOffset" => frame_index,
+        "PicID" => pic_id,
+        "PixSpeed" => pix_speed,
 
-      # NOTE: レスポンスを読んであげると安定する気がする
-      res.body.to_s
+        "PicData" => Base64.strict_encode64(pixel_data)
+      }
       frame_index += 1
     end
   end
+
+  res =
+    HTTP
+      .post(
+        API_URL,
+        json: {
+          Command: "Draw/CommandList",
+          CommandList: commands
+        }
+      )
+      .then { |response| JSON.parse(response.body.to_s) }
+  raise "Failed to send command list: #{res}" if res["error_code"] != 0
 end
 
 run_update_render if $PROGRAM_NAME == __FILE__
