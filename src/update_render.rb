@@ -237,7 +237,7 @@ def run_update_render(hide_event_name: ENV["HIDE_EVENT_NAME"] == "1")
         0
       end
     )
-  stop_steps = 1
+  stop_steps = 10
   frames = (scroll_needed ? scroll_steps + stop_steps * 2 - 1 : 1)
   frames = [frames, 60].min
   puts "Total scroll steps: #{scroll_steps}"
